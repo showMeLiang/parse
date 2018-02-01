@@ -1,10 +1,19 @@
 import  xml.etree.cElementTree as ET
 import os
+import gzip
 
 #read needed counter in conf file
 conf = open("pm.conf","rb")
 list = [line.strip() for line in conf]
+conf.close()
 print list
+
+# unzip .gz file
+def un_gz(filename):
+    f_name = filename.replace(".gz","")
+    g_file = gzip.GzipFile(filename)
+    open(f_name,"w+").write(g_file.read())
+    g_file.close()
 
 # parse pm xml
 tree = ET.parse("test_pm.xml")
@@ -37,3 +46,5 @@ for Pm in PmData:
         else:
             record.write(str(value))
     record.write('\n')
+
+record.close()
