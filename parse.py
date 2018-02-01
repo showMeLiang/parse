@@ -1,6 +1,7 @@
 import  xml.etree.cElementTree as ET
 import os
 import gzip
+import tarfile
 
 #read needed counter in conf file
 conf = open("pm.conf","rb")
@@ -14,6 +15,17 @@ def un_gz(filename):
     g_file = gzip.GzipFile(filename)
     open(f_name,"w+").write(g_file.read())
     g_file.close()
+
+def un_tar_gz(filename):
+    tar = tarfile.open(filename)
+    names = tar.getnames()
+    if os.path.isdir(filename + "_files"):
+        pass
+    else:
+        os.mkdir(filename + "_files")
+    for name in names:
+        tar.extract(name,filename + "_files/")
+    tar.close()
 
 # parse pm xml
 tree = ET.parse("test_pm.xml")
