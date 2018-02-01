@@ -15,6 +15,8 @@ def un_gz(filename):
     open(f_name,"w+").write(g_file.read())
     g_file.close()
 
+un_gz(/root/test_pm.xml.gz)
+
 # parse pm xml
 tree = ET.parse("test_pm.xml")
 root = tree.getroot()
