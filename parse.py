@@ -66,7 +66,6 @@ tree = ET.parse("ENB-PM-V2.8.1-EutranCellTdd-20171130-1515P00.xml")
 root = tree.getroot()
 header = root.find('FileHeader')
 vertor = header.find('VendorName').text
-for child in root:
-    if(child.name == "Measurements"):
-        pasre_pm(child,list)
+for Measurements in root.findall('Measurements'):
+    pasre_pm(Measurements,list)
 
