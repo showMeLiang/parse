@@ -33,13 +33,11 @@ def un_tar_gz(filename):
 
 def pasre_pm(Measurements,list):
     PmName = Measurements.find('PmName')
-
     list1 = []
     for pmcounter in list:
         for child in PmName:
             if(pmcounter == child.text):
                 list1.append(child.attrib)
-
     record = open("record.csv","a+")
     PmData = Measurements.find('PmData')
     for Pm in PmData:
@@ -61,9 +59,7 @@ def pasre_pm(Measurements,list):
             else:
                 record.write(str(value))
         record.write('\n')
-
     record.close()
-
 
 # parse pm xml
 tree = ET.parse("ENB-PM-V2.8.1-EutranCellTdd-20171130-1515P00.xml")
