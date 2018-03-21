@@ -27,3 +27,4 @@ for i in range(10):
     print('Result: %s' % r)
 # 关闭:
 manager.shutdown()
+print "test4"
