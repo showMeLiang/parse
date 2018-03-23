@@ -1,4 +1,4 @@
-import time, sys, Queue
+import time, sys, pika
 from multiprocessing.managers import BaseManager
 import  xml.etree.cElementTree as ET
 import os
@@ -6,9 +6,7 @@ import gzip
 import tarfile
 import multiprocessing
 import logging
-# 创建类似的QueueManager:
-class QueueManager(BaseManager):
-    pass
+import json
 
 def pasre_pm(Measurements):
     PmName = Measurements.find('PmName')
@@ -17,7 +15,8 @@ def pasre_pm(Measurements):
         for child in PmName:
             if(pmcounter == child.text):
                 list1.append(child.attrib)
-    recordfile = os.getpid()+"record.csv"
+    recordfile = str(os.getpid())+"record.csv"
+    print recordfile
     record = open(recordfile,"a+")
     PmData = Measurements.find('PmData')
     for Pm in PmData:
@@ -49,38 +48,30 @@ def parseXML(filepath):
     for Measurements in root.findall('Measurements'):
         pasre_pm(Measurements)
 
+def rabbitmq_callback(ch,method,properties, body):
+    pool = multiprocessing.Pool(processes = 4)
+    files = json.loads(body)
+    for file in files:
+        pool.apply_async(parseXML,(file,))
+        print('running %s' %(file))
+    pool.close()
+    pool.join()
 
-# 由于这个QueueManager只从网络上获取Queue，所以注册时只提供名字:
-QueueManager.register('get_task_queue')
-QueueManager.register('get_result_queue')
 
-# 连接到服务器，也就是运行taskmanager.py的机器:
-server_addr = '127.0.0.1'
-print('Connect to server %s...' % server_addr)
-# 端口和验证码注意保持与taskmanager.py设置的完全一致:
-m = QueueManager(address=(server_addr, 5000), authkey='abc')
-# 从网络连接:
-m.connect()
-# 获取Queue的对象:
-task = m.get_task_queue()
-result = m.get_result_queue()
+
+credentials = pika.PlainCredentials('admin','123456')
+connection = pika.BlockingConnection(pika.ConnectionParameters(
+    'localhost',5672,'/',credentials))
+channel = connection.channel()
+
 logging.basicConfig(format= '%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.ERROR,filename="./test.log",filemode="a")
 conf = open("pm.conf","rb")
 list = [line.strip() for line in conf]
 conf.close()
 pool = multiprocessing.Pool(processes = 4)
-# 从task队列取任务,并把结果写入result队列:
-while Queue.qsize>0:
-    try:
-        n = task.get(timeout=1)
-        print('run task %s...' % (n))
-        pool.apply_async(parseXML,(n,))
-        r = "finish" 
-        time.sleep(1)
-        result.put(r)
-    except Queue.Empty:
-        print('task queue is empty.')
-# 处理结束:
-pool.close()
-pool.join()
-print('worker exit.')
+channel.basic_consume(rabbitmq_callback,
+                      queue='balance',
+                      no_ack=True)
+
+print(' [*] Waiting for messages. To exit press CTRL+C')
+channel.start_consuming()
